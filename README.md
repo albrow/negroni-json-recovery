@@ -52,7 +52,7 @@ func main() {
 
 The above code will render the following response:
 
-```go
+```json
 {
     "Code": 500,
     "Short": "internalError",
