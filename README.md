@@ -1,9 +1,11 @@
 JSON Recovery middleware for negroni
 -------------------------------------
 
-Catches any panics and wraps them up into a json response, including
+[Negroni](https://github.com/codegangsta/negroni) is an idiomatic approach to web middleware in Go.
+
+This recovery middleware catches any panics and wraps them up into a json response, including
 the line number where the panic occured. Borrows heavily from the default
-recovery middleware in martini: https://github.com/go-martini/martini/blob/master/recovery.go
+[recovery middleware in martini](https://github.com/go-martini/martini/blob/master/recovery.go).
 
 See also https://github.com/go-martini/martini/blob/master/LICENSE
 
@@ -13,18 +15,20 @@ Usage
 ### Installation
 
 Make sure you have imported the package:
-```
+
+```go
 import "github.com/albrow/negroni-json-recovery"
 ```
 
 Then add to the middleware stack:
-```
+
+```go
 n.Use(recovery.JSONRecovery())
 ```
 
 ### Full Example
 
-```
+```go
 package main
 
 import (
@@ -47,7 +51,8 @@ func main() {
 ```
 
 The above code will render the following response:
-```
+
+```go
 {
     "Code": 500,
     "Short": "internalError",
