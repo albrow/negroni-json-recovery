@@ -14,6 +14,11 @@ Usage
 
 ### Installation
 
+Installation is the same as any other package
+```
+go get github.com/albrow/negroni-json-recovery
+```
+
 Make sure you have imported the package:
 
 ```go
