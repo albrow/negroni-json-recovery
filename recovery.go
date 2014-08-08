@@ -15,7 +15,7 @@ type jsonPanicError struct {
 	Code   int           `json:",omitempty"` // the http response code
 	Short  string        `json:",omitempty"` // a short explanation of the response (usually one or two words). for internal use only
 	Errors []interface{} `json:",omitempty"` // any errors that may have occured with the request and should be displayed to the user
-	From   string
+	From   string        `json:",omitempty"` // the file and line number from which the error originated
 }
 
 func (je jsonPanicError) Error() string {
@@ -28,31 +28,42 @@ func (je jsonPanicError) Error() string {
 	}
 }
 
-func newJSONPanicError(err interface{}) jsonPanicError {
-	_, file, line, _ := runtime.Caller(3)
-	return jsonPanicError{
+func newJSONPanicError(err interface{}, lineNumber bool) jsonPanicError {
+	e := jsonPanicError{
 		Code:   500,
 		Short:  "internalError",
 		Errors: []interface{}{err},
-		From:   fmt.Sprintf("%s:%d", file, line),
 	}
+	if lineNumber {
+		_, file, line, _ := runtime.Caller(3)
+		e.From = fmt.Sprintf("%s:%d", file, line)
+	}
+	return e
 }
 
-func JSONRecovery() negroni.HandlerFunc {
+// JSONRecovery returns a middleware function which catches any panics
+// and wraps them up into a JSON response. Set fullMessages to true if you
+// would like to show full error messages with line numbers and false if
+// you would like to protect this information. Typically, in development
+// mode you would set fullMessages to true, but in production you would
+// set it to false.
+func JSONRecovery(fullMessages bool) negroni.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
 		defer func() {
 			if err := recover(); err != nil {
 				stack := stack(3)
 				log.Printf("PANIC: %s\n%s", err, stack)
 
-				// TODO: determine if we are in production or dev mode
-				// in production mode, do not render any detailed error messages
 				r := render.New(render.Options{})
-				if e, ok := err.(error); ok {
-					// If err is an error, get the string message
-					r.JSON(res, 500, newJSONPanicError(e.Error()))
+				if fullMessages {
+					if e, ok := err.(error); ok {
+						// If err is an error, get the string message
+						r.JSON(res, 500, newJSONPanicError(e.Error(), true))
+					} else {
+						r.JSON(res, 500, newJSONPanicError(err, true))
+					}
 				} else {
-					r.JSON(res, 500, newJSONPanicError(err))
+					r.JSON(res, 500, newJSONPanicError("Something went wrong :(", false))
 				}
 			}
 		}()

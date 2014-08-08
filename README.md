@@ -28,7 +28,12 @@ import "github.com/albrow/negroni-json-recovery"
 Then add to the middleware stack:
 
 ```go
-n.Use(recovery.JSONRecovery())
+n.Use(recovery.JSONRecovery(true))
+```
+
+In production, you should set fullMessages to false:
+```go
+n.Use(recovery.JSONRecovery(false))
 ```
 
 ### Full Example
@@ -49,7 +54,7 @@ func main() {
 	})
 
 	n := negroni.New(negroni.NewLogger())
-	n.Use(recovery.JSONRecovery())
+	n.Use(recovery.JSONRecovery(true))
 	n.UseHandler(mux)
 	n.Run(":3000")
 }
