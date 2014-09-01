@@ -31,7 +31,8 @@ Then add to the middleware stack:
 n.Use(recovery.JSONRecovery(true))
 ```
 
-In production, you should set fullMessages to false:
+In production, you should set fullMessages to 'false' to show a generic error message:
+
 ```go
 n.Use(recovery.JSONRecovery(false))
 ```
@@ -50,7 +51,7 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		panic("Oh no! Something went wrong")
+		panic("Oh no! Something went wrong in HandleFunc")
 	})
 
 	n := negroni.New(negroni.NewLogger())
@@ -60,16 +61,28 @@ func main() {
 }
 ```
 
-The above code will render the following response:
+With fullMessages set to 'true', the above code will render the following response:
 
 ```json
 {
     "Code": 500,
     "Short": "internalError",
     "Errors": [
-        "Oh no! Something went wrong"
+        "Oh no! Something went wrong in HandleFunc"
     ],
     "From": "/Users/alex/programming/go/src/github.com/albrow/testing/negroni-panic/server.go:12"
+}
+```
+
+or with fullMessages set to 'false', it will render:
+
+```json
+{
+    "Code": 500,
+    "Short": "internalError",
+    "Errors": [
+        "Something went wrong :("
+    ]
 }
 ```
 
