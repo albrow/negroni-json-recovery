@@ -20,7 +20,7 @@ type jsonPanicError struct {
 
 func (je jsonPanicError) Error() string {
 	if len(je.Errors) == 0 {
-		return "Unkown error"
+		return "Unknown error"
 	} else if len(je.Errors) == 1 {
 		return fmt.Sprintf("%s", je.Errors[0])
 	} else {
