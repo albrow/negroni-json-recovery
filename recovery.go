@@ -11,6 +11,21 @@ import (
 	"runtime"
 )
 
+// Formatter lets you specify any arbitrary interface based on the
+// function parameters which will be converted to JSON and written
+// to the response.
+var Formatter func(errMsg string, stack []byte, file string, line int, fullMessages bool) interface{} = DefaultFormatter
+
+// DefaultFormatter returns a jsonPanicError constructed from the
+// parameters. jsonPanicError contains 4 fields:
+// - Code: the http status code (always 500)
+// - Short: a short message specifying what error occured (always "internalError")
+// - Errors: an array of error messages
+// - From: the file and line number where the error originated
+var DefaultFormatter = func(errMsg string, stack []byte, file string, line int, fullMessages bool) interface{} {
+	return newJSONPanicError(errMsg, fullMessages, file, line)
+}
+
 type jsonPanicError struct {
 	Code   int           `json:",omitempty"` // the http response code
 	Short  string        `json:",omitempty"` // a short explanation of the response (usually one or two words). for internal use only
@@ -28,14 +43,13 @@ func (je jsonPanicError) Error() string {
 	}
 }
 
-func newJSONPanicError(err interface{}, lineNumber bool) jsonPanicError {
+func newJSONPanicError(errMsg string, fullMessages bool, file string, line int) jsonPanicError {
 	e := jsonPanicError{
 		Code:   500,
 		Short:  "internalError",
-		Errors: []interface{}{err},
+		Errors: []interface{}{errMsg},
 	}
-	if lineNumber {
-		_, file, line, _ := runtime.Caller(3)
+	if fullMessages {
 		e.From = fmt.Sprintf("%s:%d", file, line)
 	}
 	return e
@@ -51,20 +65,24 @@ func JSONRecovery(fullMessages bool) negroni.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
 		defer func() {
 			if err := recover(); err != nil {
-				stack := stack(3)
+				// get the stack traces and print it out
+				stack := stack(2)
 				log.Printf("PANIC: %s\n%s", err, stack)
 
-				r := render.New(render.Options{})
-				if fullMessages {
-					if e, ok := err.(error); ok {
-						// If err is an error, get the string message
-						r.JSON(res, 500, newJSONPanicError(e.Error(), true))
-					} else {
-						r.JSON(res, 500, newJSONPanicError(err, true))
-					}
+				// convert err to a string
+				var errMsg string
+				if e, ok := err.(error); ok {
+					errMsg = e.Error()
 				} else {
-					r.JSON(res, 500, newJSONPanicError("Something went wrong :(", false))
+					errMsg = fmt.Sprint(err)
 				}
+
+				// get the file and line number
+				_, file, line, _ := runtime.Caller(2)
+
+				// render the results
+				r := render.New(render.Options{})
+				r.JSON(res, 500, Formatter(errMsg, stack, file, line, fullMessages))
 			}
 		}()
 

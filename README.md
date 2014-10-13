@@ -68,7 +68,7 @@ With fullMessages set to 'true', the above code will render the following respon
     "Code": 500,
     "Short": "internalError",
     "Errors": [
-        "Oh no! Something went wrong in HandleFunc"
+        "dial tcp 127.0.0.1:6379: connection refused"
     ],
     "From": "/Users/alex/programming/go/src/github.com/albrow/testing/negroni-panic/server.go:12"
 }
@@ -87,3 +87,27 @@ or with fullMessages set to 'false', it will render:
 ```
 
 You can also inspect console for a more detailed message and full stack trace.
+
+### Custom Response Formats
+
+You can change the response format by overriding the Formatter function. Formatter is a function
+which accepts a variety of parameters related to the error that occurred and returns an empty interface.
+The interface will be converted to JSON and rendered in the response.
+
+Here's an example of a custom formatter which only spits out the error message and no other information.
+
+```go
+recovery.Formatter = func(errMsg string, stack []byte, file string, line int, fullMessages bool) interface{} {
+	return map[string]string{
+		"error": errMsg,
+	}
+}
+```
+
+With this custom formatter, the rendered message would look like this:
+
+```json
+{
+	"error": "dial tcp 127.0.0.1:6379: connection refused"
+}
+```
