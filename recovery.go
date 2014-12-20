@@ -16,6 +16,13 @@ import (
 // to the response.
 var Formatter func(errMsg string, stack []byte, file string, line int, fullMessages bool) interface{} = DefaultFormatter
 
+// StackDepth lets you specify how many stack frames to skip before reaching
+// the file and line number you care about. You probably want to set this
+// so that recovery skips frames in the stack until it reaches the line where
+// panic was called. This can depend on how you included the middleware and
+// recovered from panics. The default is 2
+var StackDepth = 2
+
 // DefaultFormatter returns a jsonPanicError constructed from the
 // parameters. jsonPanicError contains 4 fields:
 // - Code: the http status code (always 500)
@@ -66,7 +73,7 @@ func JSONRecovery(fullMessages bool) negroni.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				// get the stack traces and print it out
-				stack := stack(2)
+				stack := stack(0)
 				log.Printf("PANIC: %s\n%s", err, stack)
 
 				// convert err to a string
@@ -78,7 +85,7 @@ func JSONRecovery(fullMessages bool) negroni.HandlerFunc {
 				}
 
 				// get the file and line number
-				_, file, line, _ := runtime.Caller(2)
+				_, file, line, _ := runtime.Caller(StackDepth)
 
 				// render the results
 				r := render.New(render.Options{})
