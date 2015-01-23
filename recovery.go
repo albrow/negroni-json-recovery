@@ -23,6 +23,10 @@ var Formatter func(errMsg string, stack []byte, file string, line int, fullMessa
 // recovered from panics. The default is 2
 var StackDepth = 2
 
+// IndentJSON specifies whether or not to indent (or pretty print) the json
+// returned when there is a panic. The default is false.
+var IndentJSON = false
+
 // DefaultFormatter returns a jsonPanicError constructed from the
 // parameters. jsonPanicError contains 4 fields:
 // - Code: the http status code (always 500)
@@ -88,7 +92,9 @@ func JSONRecovery(fullMessages bool) negroni.HandlerFunc {
 				_, file, line, _ := runtime.Caller(StackDepth)
 
 				// render the results
-				r := render.New(render.Options{})
+				r := render.New(render.Options{
+					IndentJSON: IndentJSON,
+				})
 				r.JSON(res, 500, Formatter(errMsg, stack, file, line, fullMessages))
 			}
 		}()
